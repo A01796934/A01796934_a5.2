@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Actividad 5.2 – Ejercicio 2: Compute Sales
-Uso: python src/compute_sales.py <products.json> <sales.json>
+Actividad 5.2 – Ejercicio 2: Compute Sales con salida dinámica
 """
 
 from __future__ import annotations
@@ -13,7 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-RESULTS_FILENAME = "SalesResults.txt"
+# Carpeta global para todos los resultados
+RESULTS_DIR = "results"
 
 PRODUCT_KEYS = ("product", "Product", "title", "name", "item")
 PRICE_KEYS = ("price", "Price", "cost", "unit_price", "unitPrice")
@@ -122,7 +122,7 @@ def compute_receipt(
             errs.append(f"[Sales {idx}] Qty<=0: {sale.quantity}")
             continue
         if sale.product not in catalogue:
-            errs.append(f"[Sales {idx}] No en catálogo: {sale.product}")
+            errs.append(f"[Sales {idx}] No cat: {sale.product}")
             continue
         u_p = catalogue[sale.product]
         sub = u_p * sale.quantity
@@ -162,7 +162,6 @@ def safe_load_json(path: str, label: str) -> Any:
         return load_json(path)
     except (FileNotFoundError, PermissionError, OSError,
             json.JSONDecodeError) as exc:
-        # Se rompe la linea para cumplir con los 79 caracteres
         msg = f"Err {label}: {exc}"
         raise RuntimeError(msg) from exc
 
@@ -185,7 +184,15 @@ def main(argv: List[str]) -> int:
     dur = time.perf_counter() - start
     rep = format_report(receipt, total, c_err + s_err + calc_err, dur)
     print(rep)
-    Path(RESULTS_FILENAME).write_text(rep, encoding="utf-8")
+
+    # Lógica de guardado dinámico
+    output_dir = Path(RESULTS_DIR)
+    output_dir.mkdir(exist_ok=True)
+    # Toma el nombre del archivo de ventas y le pone prefijo
+    sales_file_name = Path(argv[2]).stem
+    result_path = output_dir / f"Results_{sales_file_name}.txt"
+    result_path.write_text(rep, encoding="utf-8")
+
     return 0
 
 

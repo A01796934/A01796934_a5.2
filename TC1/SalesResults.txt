@@ -1,9 +1,0 @@
-=== Sales Results ===
-Catalogue items: 50
-Sales line items processed: 0
-
-TOTAL COST: 0.00
-
-Elapsed time (s): 0.000254
-
-No errors detected.

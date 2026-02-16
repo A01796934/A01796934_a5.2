@@ -1,0 +1,55 @@
+=== SALES RECEIPT ===
+Product                               Qty         Unit       Subtotal
+----------------------------------------------------------------------
+Rustic breakfast                   200.00        21.32        4264.00
+Sandwich with salad                 23.00        22.48         517.04
+Raw legums                          11.00        17.11         188.21
+Fresh stawberry                    221.00        28.59        6318.39
+Raw legums                           2.00        17.11          34.22
+Green smoothie                     400.00        17.68        7072.00
+Cuban sandwiche                      2.00        18.50          37.00
+Hazelnut in black ceramic bowl       2.00        27.35          54.70
+Tomatoes                             1.00        26.03          26.03
+Plums                              250.00        19.18        4795.00
+Fresh blueberries                  334.00        21.01        7017.34
+Green smoothie                     300.00        17.68        5304.00
+Corn                                68.00        13.55         921.40
+French fries                        33.00        18.32         604.56
+Ground beef meat burger             78.00        11.73         914.94
+Hazelnut in black ceramic bowl       2.00        27.35          54.70
+Sweet fresh stawberry               87.00        29.45        2562.15
+Homemade bread                       1.00        17.48          17.48
+Smoothie with chia seeds            46.00        25.26        1161.96
+Corn                                 1.00        13.55          13.55
+Plums                                2.00        19.18          38.36
+Fresh blueberries                   46.00        21.01         966.46
+Green smoothie                       1.00        17.68          17.68
+Corn                                 2.00        13.55          27.10
+French fries                         4.00        18.32          73.28
+Ground beef meat burger             64.00        11.73         750.72
+Hazelnut in black ceramic bowl       2.00        27.35          54.70
+Sweet fresh stawberry                3.00        29.45          88.35
+Homemade bread                     456.00        17.48        7970.88
+Smoothie with chia seeds             2.00        25.26          50.52
+Corn                                 5.00        13.55          67.75
+Plums                              645.00        19.18       12371.10
+Green smoothie                       2.00        17.68          35.36
+Corn                               465.00        13.55        6300.75
+French fries                        20.00        18.32         366.40
+Ground beef meat burger              4.00        11.73          46.92
+Hazelnut in black ceramic bowl       1.00        27.35          27.35
+Sweet fresh stawberry              131.00        29.45        3857.95
+Homemade bread                       9.00        17.48         157.32
+Smoothie with chia seeds            13.00        25.26         328.38
+Corn                               678.00        13.55        9186.90
+Plums                              334.00        19.18        6406.12
+Fresh blueberries                 3445.00        21.01       72379.45
+Corn                               445.00        13.55        6029.75
+----------------------------------------------------------------------
+                                                 TOTAL      169478.22
+
+Elapsed (s): 0.000486
+
+=== ERRORS ===
+[Sales 33] Qty<=0: -35.0
+[Sales 45] Qty<=0: -123.0
