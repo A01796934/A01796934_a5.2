@@ -3,13 +3,7 @@
 Actividad 5.2 – Ejercicio 2: Compute Sales
 
 Uso:
-    python computeSales.py <product_list.json> <sales.json>
-
-- Calcula total de ventas usando catálogo de precios.
-- Genera "recibo" (detalle por producto, cantidad, precio, subtotal).
-- Maneja datos inválidos: reporta errores y continúa.
-- Imprime y guarda resultados en SalesResults.txt
-- Incluye tiempo transcurrido.
+    python compute_sales.py <product_list.json> <sales.json>
 """
 
 from __future__ import annotations
@@ -23,36 +17,10 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 RESULTS_FILENAME = "SalesResults.txt"
 
-# Posibles nombres de campos en el JSON (común en tareas)
-PRODUCT_KEYS = (
-    "product",
-    "Product",
-    "title",
-    "Title",
-    "name",
-    "Name",
-    "item",
-    "Item",
-)
-PRICE_KEYS = (
-    "price",
-    "Price",
-    "cost",
-    "Cost",
-    "unit_price",
-    "unitPrice",
-    "UnitPrice",
-)
-QTY_KEYS = (
-    "quantity",
-    "Quantity",
-    "qty",
-    "Qty",
-    "amount",
-    "Amount",
-    "units",
-    "Units",
-)
+# Constantes de búsqueda para robustez en JSON
+PRODUCT_KEYS = ("product", "Product", "title", "name", "item")
+PRICE_KEYS = ("price", "Price", "cost", "unit_price", "unitPrice")
+QTY_KEYS = ("quantity", "Quantity", "qty", "amount", "units")
 
 ReceiptLine = Tuple[str, float, float, float]
 
@@ -60,7 +28,6 @@ ReceiptLine = Tuple[str, float, float, float]
 @dataclass(frozen=True)
 class SaleLine:
     """Representa una línea de venta validada (producto y cantidad)."""
-
     product: str
     quantity: float
 
@@ -73,7 +40,7 @@ def load_json(path_str: str) -> Any:
 
 
 def first_present(data: Dict[str, Any], keys: Iterable[str]) -> Any:
-    """Devuelve el primer valor encontrado en `data` cuyo key esté en `keys`."""
+    """Devuelve el primer valor encontrado en data cuyo key esté en keys."""
     for key in keys:
         if key in data:
             return data[key]
@@ -81,7 +48,7 @@ def first_present(data: Dict[str, Any], keys: Iterable[str]) -> Any:
 
 
 def to_float(value: Any) -> Optional[float]:
-    """Convierte `value` a float si es posible; si no, devuelve None."""
+    """Convierte value a float si es posible; si no, devuelve None."""
     try:
         return float(value)
     except (TypeError, ValueError):
@@ -89,127 +56,79 @@ def to_float(value: Any) -> Optional[float]:
 
 
 def iter_records(obj: Any) -> Iterable[Any]:
-    """
-    Devuelve elementos tipo 'record' de distintas estructuras.
-
-    Soporta:
-    - lista => itera elementos
-    - dict con 'items'/'records'/'sales'/'data' => itera esa lista
-    - dict único => lo considera un record
-    """
+    """Devuelve elementos tipo 'record' de distintas estructuras."""
     if isinstance(obj, list):
         yield from obj
         return
 
     if isinstance(obj, dict):
-        candidate_keys = (
-            "items",
-            "Items",
-            "records",
-            "Records",
-            "sales",
-            "Sales",
-            "data",
-            "Data",
-        )
+        candidate_keys = ("items", "records", "sales", "data")
         for key in candidate_keys:
-            if key in obj and isinstance(obj[key], list):
-                yield from obj[key]
+            # Versión multilínea para evitar E501
+            val = obj.get(key)
+            if isinstance(val, list):
+                yield from val
                 return
         yield obj
-        return
-
     return
 
 
 def build_catalogue(raw: Any) -> Tuple[Dict[str, float], List[str]]:
-    """
-    Construye un catálogo {product_name: price} desde `raw`.
-
-    Retorna:
-        (catalogue, errors)
-    """
+    """Construye un catálogo {product_name: price} desde raw."""
     errors: List[str] = []
     catalogue: Dict[str, float] = {}
 
     for idx, record in enumerate(iter_records(raw), start=1):
         if not isinstance(record, dict):
-            errors.append(
-                f"[Catalogue {idx}] Record inválido (no es objeto JSON)."
-            )
+            errors.append(f"[Catalogue {idx}] Record inválido.")
             continue
 
         product = first_present(record, PRODUCT_KEYS)
         price = first_present(record, PRICE_KEYS)
 
         if not isinstance(product, str) or not product.strip():
-            errors.append(
-                f"[Catalogue {idx}] Producto inválido o vacío: {product!r}"
-            )
+            errors.append(f"[Catalogue {idx}] Producto vacío: {product!r}")
             continue
 
-        price_val = to_float(price)
-        if price_val is None or price_val < 0:
-            errors.append(
-                f"[Catalogue {idx}] Precio inválido para '{product}': {price!r}"
-            )
+        p_val = to_float(price)
+        if p_val is None or p_val < 0:
+            errors.append(f"[Catalogue {idx}] Precio inválido: {price!r}")
             continue
 
-        catalogue[product.strip()] = price_val
-
-    # Caso alterno: dict directo {"A":10,"B":5}
-    if not catalogue and isinstance(raw, dict):
-        for key, value in raw.items():
-            if not isinstance(key, str):
-                continue
-            price_val = to_float(value)
-            if price_val is None or price_val < 0:
-                continue
-            catalogue[key.strip()] = price_val
+        catalogue[product.strip()] = p_val
 
     if not catalogue:
-        errors.append(
-            "No se pudo construir el catálogo: formato inesperado o vacío."
-        )
+        errors.append("Catálogo vacío o formato inesperado.")
 
     return catalogue, errors
 
 
 def build_sales(raw: Any) -> Tuple[List[SaleLine], List[str]]:
-    """
-    Extrae líneas de venta desde `raw`.
-
-    Retorna:
-        (sales_lines, errors)
-    """
+    """Extrae líneas de venta desde raw."""
     errors: List[str] = []
     lines: List[SaleLine] = []
 
     for idx, record in enumerate(iter_records(raw), start=1):
         if not isinstance(record, dict):
-            errors.append(f"[Sales {idx}] Record inválido (no es objeto JSON).")
+            errors.append(f"[Sales {idx}] Record inválido.")
             continue
 
         product = first_present(record, PRODUCT_KEYS)
         qty = first_present(record, QTY_KEYS)
 
         if not isinstance(product, str) or not product.strip():
-            errors.append(
-                f"[Sales {idx}] Producto inválido o vacío: {product!r}"
-            )
+            errors.append(f"[Sales {idx}] Producto inválido: {product!r}")
             continue
 
         qty_val = to_float(qty)
         if qty_val is None:
-            errors.append(
-                f"[Sales {idx}] Cantidad inválida para '{product}': {qty!r}"
-            )
+            errors.append(f"[Sales {idx}] Cantidad inválida: {qty!r}")
             continue
 
         lines.append(SaleLine(product=product.strip(), quantity=qty_val))
 
     if not lines:
-        errors.append("No se pudieron extraer ventas: formato inesperado o vacío.")
+        errors.append("No se pudieron extraer ventas.")
 
     return lines, errors
 
@@ -218,28 +137,18 @@ def compute_receipt(
     catalogue: Dict[str, float],
     sales: List[SaleLine],
 ) -> Tuple[List[ReceiptLine], float, List[str]]:
-    """
-    Genera el recibo a partir del catálogo y las ventas.
-
-    Retorna:
-        (receipt_lines, total, errors)
-    """
+    """Genera el recibo a partir del catálogo y las ventas."""
     errors: List[str] = []
     receipt: List[ReceiptLine] = []
     total = 0.0
 
     for idx, sale in enumerate(sales, start=1):
         if sale.quantity <= 0:
-            errors.append(
-                f"[Sales {idx}] Cantidad no positiva para '{sale.product}': "
-                f"{sale.quantity}"
-            )
+            errors.append(f"[Sales {idx}] Qty <= 0: {sale.quantity}")
             continue
 
         if sale.product not in catalogue:
-            errors.append(
-                f"[Sales {idx}] Producto no existe en catálogo: '{sale.product}'"
-            )
+            errors.append(f"[Sales {idx}] No en catálogo: {sale.product}")
             continue
 
         unit_price = catalogue[sale.product]
@@ -256,31 +165,23 @@ def format_report(
     errors: List[str],
     elapsed: float,
 ) -> str:
-    """Formatea el reporte final (recibo + tiempo + errores) como texto."""
+    """Formatea el reporte final como texto."""
     lines: List[str] = ["=== SALES RECEIPT ==="]
 
     if receipt:
         header = f"{'Product':30} {'Qty':>10} {'Unit':>12} {'Subtotal':>14}"
         lines.append(header)
         lines.append("-" * 70)
-
-        for product, qty, unit, subtotal in receipt:
-            lines.append(
-                f"{product[:30]:30} {qty:10.2f} {unit:12.2f} {subtotal:14.2f}"
-            )
-
+        for prod, qty, unit, sub in receipt:
+            lines.append(f"{prod[:30]:30} {qty:10.2f} {unit:12.2f} {sub:14.2f}")
         lines.append("-" * 70)
         lines.append(f"{'TOTAL':>54} {total:14.2f}")
     else:
-        lines.append("No valid sales lines to compute a receipt.")
-        lines.append(f"TOTAL: {total:.2f}")
+        lines.append("No valid sales lines.")
 
-    lines.append("")
-    lines.append(f"Elapsed time (s): {elapsed:.6f}")
-    lines.append("")
-
+    lines.append(f"\nElapsed time (s): {elapsed:.6f}\n")
     if errors:
-        lines.append("=== ERRORS (execution continued) ===")
+        lines.append("=== ERRORS ===")
         lines.extend(errors)
     else:
         lines.append("No errors detected.")
@@ -288,66 +189,40 @@ def format_report(
     return "\n".join(lines) + "\n"
 
 
-def parse_args(argv: Sequence[str]) -> Tuple[str, str]:
-    """Valida argumentos y retorna (product_path, sales_path)."""
-    if len(argv) != 3:
-        raise ValueError(
-            "Usage: python computeSales.py <product_list.json> <sales.json>"
-        )
-    return argv[1], argv[2]
-
-
 def safe_load_json(path_str: str, label: str) -> Any:
     """Carga JSON y levanta un error con mensaje claro si falla."""
     try:
         return load_json(path_str)
-    except FileNotFoundError as exc:
-        raise RuntimeError(f"{label} file not found: '{path_str}'") from exc
-    except PermissionError as exc:
-        raise RuntimeError(f"No permission to read {label} file: '{path_str}'") from exc
-    except OSError as exc:
-        raise RuntimeError(f"OS error reading {label} file '{path_str}': {exc}") from exc
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            f"Invalid JSON in {label} file '{path_str}': {exc}"
-        ) from exc
-
-
-def write_results(report: str, filename: str = RESULTS_FILENAME) -> None:
-    """Escribe el reporte a disco."""
-    Path(filename).write_text(report, encoding="utf-8")
+    except (FileNotFoundError, PermissionError, OSError, json.JSONDecodeError) \
+            as exc:
+        raise RuntimeError(f"Error loading {label} '{path_str}': {exc}") from exc
 
 
 def main(argv: List[str]) -> int:
-    """Punto de entrada del programa."""
+    """Punto de entrada. Reducido para evitar 'too-many-locals'."""
     start = time.perf_counter()
 
-    try:
-        product_path, sales_path = parse_args(argv)
-    except ValueError as exc:
-        print(str(exc))
+    if len(argv) != 3:
+        print(f"Usage: python {argv[0]} <products.json> <sales.json>")
         return 2
 
     try:
-        raw_products = safe_load_json(product_path, label="product")
-        raw_sales = safe_load_json(sales_path, label="sales")
+        # Cargamos directamente en una estructura procesable
+        cat, cat_err = build_catalogue(safe_load_json(argv[1], "product"))
+        sales, sales_err = build_sales(safe_load_json(argv[2], "sales"))
     except RuntimeError as exc:
         print(str(exc))
         return 1
 
-    catalogue, cat_errors = build_catalogue(raw_products)
-    sales_lines, sales_errors = build_sales(raw_sales)
-    receipt, total, calc_errors = compute_receipt(catalogue, sales_lines)
-
-    elapsed = time.perf_counter() - start
-    all_errors = cat_errors + sales_errors + calc_errors
-    report = format_report(receipt, total, all_errors, elapsed)
+    receipt, total, calc_err = compute_receipt(cat, sales)
+    report = format_report(receipt, total, cat_err + sales_err + calc_err,
+                           time.perf_counter() - start)
 
     print(report)
-    write_results(report)
+    Path(RESULTS_FILENAME).write_text(report, encoding="utf-8")
 
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(sys.argv))
+    sys.exit(main(sys.argv))
