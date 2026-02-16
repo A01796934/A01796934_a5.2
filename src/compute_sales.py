@@ -166,6 +166,15 @@ def safe_load_json(path: str, label: str) -> Any:
         raise RuntimeError(msg) from exc
 
 
+def save_results(sales_path: str, report_text: str) -> None:
+    """Crea directorio y guarda el reporte con nombre dinamico."""
+    output_dir = Path(RESULTS_DIR)
+    output_dir.mkdir(exist_ok=True)
+    sales_file_name = Path(sales_path).stem
+    result_path = output_dir / f"Results_{sales_file_name}.txt"
+    result_path.write_text(report_text, encoding="utf-8")
+
+
 def main(argv: List[str]) -> int:
     """Main."""
     start = time.perf_counter()
@@ -180,18 +189,12 @@ def main(argv: List[str]) -> int:
     except RuntimeError as exc:
         print(str(exc))
         return 1
-    receipt, total, calc_err = compute_receipt(cat, sal)
-    dur = time.perf_counter() - start
-    rep = format_report(receipt, total, c_err + s_err + calc_err, dur)
-    print(rep)
 
-    # Lógica de guardado dinámico
-    output_dir = Path(RESULTS_DIR)
-    output_dir.mkdir(exist_ok=True)
-    # Toma el nombre del archivo de ventas y le pone prefijo
-    sales_file_name = Path(argv[2]).stem
-    result_path = output_dir / f"Results_{sales_file_name}.txt"
-    result_path.write_text(rep, encoding="utf-8")
+    receipt, total, calc_err = compute_receipt(cat, sal)
+    rep = format_report(receipt, total, c_err + s_err + calc_err,
+                        time.perf_counter() - start)
+    print(rep)
+    save_results(argv[2], rep)
 
     return 0
 
